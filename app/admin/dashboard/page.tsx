@@ -1,5 +1,5 @@
 "use client"
-
+import Link from 'next/link';
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -42,7 +42,16 @@ export default function AdminDashboard() {
   }
 
   return (
+
+
     <div className="min-h-screen bg-background p-4">
+
+      <ul>
+        <li><Link href="/admin/projects">Projects</Link></li>
+        <li><Link href="/admin/certificates">Certificates</Link></li>
+        <li><Link href="/admin/blog">Blog</Link></li>
+        <li><Link href="/admin/education">Education</Link></li>
+      </ul>
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-display font-bold">Admin Dashboard</h1>
