@@ -1,17 +1,13 @@
-// models/Education.ts
+// models/Experience.ts
 import mongoose from 'mongoose'
 
-const EducationSchema = new mongoose.Schema(
+const ExperienceSchema = new mongoose.Schema(
     {
-        degree: {
+        title: {
             type: String,
             required: true,
         },
-        institution: {
-            type: String,
-            required: true,
-        },
-        period: {
+        company: {
             type: String,
             required: true,
         },
@@ -19,8 +15,14 @@ const EducationSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        gpa: {
+        period: {
             type: String,
+            required: true,
+        },
+        type: {
+            type: String,
+            enum: ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'],
+            required: true,
         },
         description: {
             type: String,
@@ -29,9 +31,16 @@ const EducationSchema = new mongoose.Schema(
             type: [String],
             default: [],
         },
+        technologies: {
+            type: [String],
+            default: [],
+        },
+        website: {
+            type: String,
+        },
     },
     { timestamps: true }
 )
 
-export default mongoose.models.Education ||
-    mongoose.model('Education', EducationSchema)
+export default mongoose.models.Experience ||
+    mongoose.model('Experience', ExperienceSchema)

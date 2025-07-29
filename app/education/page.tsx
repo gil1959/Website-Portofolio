@@ -1,35 +1,43 @@
-"use client"
+'use client'
 
-import { Navigation } from "@/components/navigation"
-import { Footer } from "@/components/footer"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { GraduationCap, Calendar, MapPin } from "lucide-react"
+import { useState, useEffect } from 'react'
+import { Navigation } from '@/components/navigation'
+import { Footer } from '@/components/footer'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { GraduationCap, Calendar, MapPin } from 'lucide-react'
+import Image from 'next/image'
 
-const educationData = [
-  {
-    id: 1,
-    degree: "Bachelor of Computer Science",
-    institution: "University of Technology",
-    location: "Jakarta, Indonesia",
-    period: "2020 - 2024",
-    gpa: "3.8/4.0",
-    description: "Specialized in Software Engineering and Web Development. Graduated Magna Cum Laude.",
-    achievements: ["Dean's List", "Best Final Project", "Programming Competition Winner"],
-  },
-  {
-    id: 2,
-    degree: "High School Diploma",
-    institution: "SMA Negeri 1 Jakarta",
-    location: "Jakarta, Indonesia",
-    period: "2017 - 2020",
-    gpa: "95/100",
-    description: "Science track with focus on Mathematics and Physics.",
-    achievements: ["Valedictorian", "Science Olympiad Gold Medal", "Student Council President"],
-  },
-]
+type Education = {
+  _id: string
+  degree: string
+  institution: string
+  period: string
+  location: string
+  gpa?: string
+  description?: string
+  achievements: string[]
+}
 
 export default function EducationPage() {
+  const [data, setData] = useState<Education[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/education')
+      .then(r => r.json())
+      .then(arr => { setData(arr); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading education…</p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-gray-900/50 dark:to-gray-800/50">
       <Navigation />
@@ -45,12 +53,14 @@ export default function EducationPage() {
 
           <div className="relative">
             <div className="timeline-line"></div>
-
             <div className="space-y-12">
-              {educationData.map((edu, index) => (
-                <div key={edu.id} className="relative fade-up" style={{ animationDelay: `${index * 0.2}s` }}>
+              {data.map((edu, idx) => (
+                <div
+                  key={edu._id}
+                  className="relative fade-up"
+                  style={{ animationDelay: `${idx * 0.2}s` }}
+                >
                   <div className="timeline-dot"></div>
-
                   <div className="ml-12">
                     <Card className="p-6 hover-lift">
                       <div className="space-y-4">
@@ -60,9 +70,10 @@ export default function EducationPage() {
                               <GraduationCap className="mr-2 h-5 w-5 text-primary" />
                               {edu.degree}
                             </h3>
-                            <p className="text-lg text-muted-foreground font-medium font-roboto">{edu.institution}</p>
+                            <p className="text-lg text-muted-foreground font-medium font-roboto">
+                              {edu.institution}
+                            </p>
                           </div>
-
                           <div className="space-y-2 text-sm text-muted-foreground font-roboto">
                             <div className="flex items-center">
                               <Calendar className="mr-2 h-4 w-4" />
@@ -75,24 +86,30 @@ export default function EducationPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center space-x-4">
+                        {edu.gpa && (
                           <Badge variant="secondary" className="font-medium">
                             GPA: {edu.gpa}
                           </Badge>
-                        </div>
+                        )}
 
-                        <p className="text-muted-foreground leading-relaxed font-roboto">{edu.description}</p>
+                        {edu.description && (
+                          <p className="text-muted-foreground leading-relaxed font-roboto">
+                            {edu.description}
+                          </p>
+                        )}
 
-                        <div className="space-y-2">
-                          <h4 className="font-medium font-roboto">Key Achievements:</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {edu.achievements.map((achievement, i) => (
-                              <Badge key={i} variant="outline">
-                                {achievement}
-                              </Badge>
-                            ))}
+                        {edu.achievements.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="font-medium font-roboto">Key Achievements:</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {edu.achievements.map((ach, i) => (
+                                <Badge key={i} variant="outline">
+                                  {ach}
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </Card>
                   </div>

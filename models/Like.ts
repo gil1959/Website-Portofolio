@@ -1,10 +1,13 @@
 // models/Like.ts
-import { Schema, models, model } from 'mongoose';
+import mongoose from 'mongoose'
 
-const LikeSchema = new Schema({
-    project: { type: String, required: true },
-    isLike: { type: Boolean, required: true },
-    createdAt: { type: Date, default: Date.now }
-});
+const LikeSchema = new mongoose.Schema(
+    {
+        targetId: { type: String, required: true, unique: true },
+        likes: { type: Number, default: 0 },
+        dislikes: { type: Number, default: 0 },
+    },
+    { timestamps: true }
+)
 
-export const Like = models.Like || model('Like', LikeSchema);
+export default mongoose.models.Like || mongoose.model('Like', LikeSchema)

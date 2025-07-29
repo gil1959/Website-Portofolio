@@ -1,202 +1,189 @@
-"use client"
 
-import type React from "react"
+'use client'
 
-import { useState } from "react"
-import { Navigation } from "@/components/navigation"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { useTranslation } from "@/components/user-provider"
-import { Star, Plus, Upload } from "lucide-react"
-import Image from "next/image"
-import { useToast } from "@/hooks/use-toast"
-import { Footer } from "@/components/footer"
+import { useState, useEffect, FormEvent } from 'react'
+import { Navigation } from '@/components/navigation'
+import { Footer } from '@/components/footer'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import Image from 'next/image'
 
-type Review = {
-  id: number
+// Tipe data review sesuai schema
+interface Review {
+  _id: string
   name: string
-  rating: number
-  review: string
-  image: string
-  date: string
+  role: string
+  company: string
+  text: string
+  avatar?: string
+  createdAt: string
 }
 
-const initialReviews: Review[] = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    rating: 5,
-    review:
-      "Exceptional work! The website exceeded all our expectations. Professional, responsive, and delivered on time.",
-    image: "/placeholder.svg?height=60&width=60",
-    date: "2024-01-15",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    rating: 5,
-    review:
-      "Outstanding developer with great attention to detail. The project was completed flawlessly and communication was excellent throughout.",
-    image: "/placeholder.svg?height=60&width=60",
-    date: "2024-01-10",
-  },
-  {
-    id: 3,
-    name: "Emily Rodriguez",
-    rating: 4,
-    review:
-      "Very satisfied with the results. Clean code, modern design, and great user experience. Would definitely recommend!",
-    image: "/placeholder.svg?height=60&width=60",
-    date: "2024-01-05",
-  },
-]
-
 export default function RatingsPage() {
-  const [reviews, setReviews] = useState<Review[]>(initialReviews)
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [page, setPage] = useState(1)
+  const [pages, setPages] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({
-    name: "",
-    rating: 5,
-    review: "",
-    image: "",
-  })
-  const t = useTranslation()
-  const { toast } = useToast()
+  const [name, setName] = useState('')
+  const [role, setRole] = useState('')
+  const [company, setCompany] = useState('')
+  const [text, setText] = useState('')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const PAGE_SIZE = 3
 
-    if (!formData.name.trim() || !formData.review.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      })
-      return
+  // Fetch satu halaman review
+  async function fetchPage(p: number) {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/ratings?page=${p}&limit=${PAGE_SIZE}`)
+      if (!res.ok) throw new Error('Gagal memuat review')
+      const json = await res.json() as { data: Review[]; page: number; limit: number; total: number }
+      setReviews(json.data)
+      setPage(json.page)
+      setPages(Math.ceil(json.total / PAGE_SIZE))
+      setTotal(json.total)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-
-    const newReview: Review = {
-      id: Date.now(),
-      name: formData.name,
-      rating: formData.rating,
-      review: formData.review,
-      image: formData.image || "/placeholder.svg?height=60&width=60",
-      date: new Date().toISOString().split("T")[0],
-    }
-
-    setReviews([newReview, ...reviews])
-    setFormData({ name: "", rating: 5, review: "", image: "" })
-    setShowForm(false)
-
-    toast({
-      title: "Success",
-      description: "Your review has been added successfully!",
-    })
   }
 
-  const renderStars = (rating: number, interactive = false, onRate?: (rating: number) => void) => {
+  // Initial load
+  useEffect(() => { fetchPage(1) }, [])
+
+  // Upload avatar ke storage
+  async function uploadAvatar(file: File): Promise<string> {
+    setUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    const { url } = await res.json()
+    setUploading(false)
+    return url
+  }
+
+  // Handle submit review
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    let avatarUrl = ''
+    if (avatarFile) {
+      try {
+        avatarUrl = await uploadAvatar(avatarFile)
+      } catch {
+        setError('Gagal upload avatar')
+        return
+      }
+    }
+    try {
+      const res = await fetch('/api/ratings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, role, company, text, avatar: avatarUrl }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(body.error || 'Gagal menambah review')
+      }
+      // Reset form & reload halaman
+      setName('')
+      setRole('')
+      setCompany('')
+      setText('')
+      setAvatarFile(null)
+      setShowForm(false)
+      fetchPage(page)
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  if (loading) {
     return (
-      <div className="flex space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type={interactive ? "button" : undefined}
-            onClick={interactive && onRate ? () => onRate(star) : undefined}
-            className={`${interactive ? "cursor-pointer hover:scale-110" : "cursor-default"} transition-transform`}
-            disabled={!interactive}
-          >
-            <Star
-              className={`h-5 w-5 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300 dark:text-gray-600"
-                }`}
-            />
-          </button>
-        ))}
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <p>Loading…</p>
       </div>
     )
   }
 
-  const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-gray-900/50 dark:to-gray-800/50">
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       <Navigation />
 
-      <main className="pt-24 pb-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center space-y-4 mb-16 fade-up">
-            <h1 className="text-4xl lg:text-5xl font-display font-bold gradient-text">{t.ratings}</h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">What clients say about working with me</p>
+      <main className="flex-grow pt-24 pb-16 px-4">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-4xl font-bold text-center mb-8">Ratings &amp; Reviews</h1>
 
-            <div className="flex items-center justify-center space-x-4 mt-8">
-              <div className="text-3xl font-bold">{averageRating.toFixed(1)}</div>
-              {renderStars(Math.round(averageRating))}
-              <div className="text-muted-foreground">({reviews.length} reviews)</div>
+          {error && (
+            <div className="bg-red-800 text-red-200 p-3 rounded mb-6 text-center">
+              {error}
             </div>
-          </div>
+          )}
 
-          <div className="flex justify-center mb-12 fade-up-delay">
-            <Button onClick={() => setShowForm(!showForm)} className="group" size="lg">
-              <Plus className="mr-2 h-5 w-5 transition-transform group-hover:rotate-90" />
-              {t.addReview}
-            </Button>
-          </div>
+          {!showForm && (
+            <div className="text-center mb-8">
+              <Button onClick={() => setShowForm(true)}>Add Review</Button>
+            </div>
+          )}
 
           {showForm && (
-            <Card className="p-6 mb-12 scale-in">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <h3 className="text-xl font-semibold">Add Your Review</h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">{t.name} *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Your full name"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Profile Image (Optional)</Label>
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        type="url"
-                        value={formData.image}
-                        onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                        placeholder="Image URL"
-                      />
-                      <Button type="button" variant="outline" size="icon">
-                        <Upload className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{t.rating} *</Label>
-                  {renderStars(formData.rating, true, (rating) => setFormData({ ...formData, rating }))}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="review">{t.review} *</Label>
-                  <Textarea
-                    id="review"
-                    value={formData.review}
-                    onChange={(e) => setFormData({ ...formData, review: e.target.value })}
-                    placeholder="Share your experience working with me..."
-                    rows={4}
+            <Card className="bg-gray-800 p-6 mb-12">
+              <form onSubmit={onSubmit} className="space-y-4">
+                <div className="flex space-x-4">
+                  <Input
+                    placeholder="Name"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
                     required
+                    className="bg-gray-700 text-white"
+                  />
+                  <Input
+                    placeholder="Role"
+                    value={role}
+                    onChange={e => setRole(e.target.value)}
+                    required
+                    className="bg-gray-700 text-white"
                   />
                 </div>
-
-                <div className="flex space-x-4">
-                  <Button type="submit">{t.submit}</Button>
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <Input
+                  placeholder="Company"
+                  value={company}
+                  onChange={e => setCompany(e.target.value)}
+                  required
+                  className="bg-gray-700 text-white"
+                />
+                <Textarea
+                  placeholder="Write your review…"
+                  value={text}
+                  onChange={e => setText(e.target.value)}
+                  required
+                  className="bg-gray-700 text-white"
+                />
+                <div>
+                  <label className="block mb-1 font-medium">Avatar (optional)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => e.target.files?.[0] && setAvatarFile(e.target.files[0])}
+                    disabled={uploading}
+                    className="block w-full text-sm text-gray-400 bg-gray-800 border border-gray-700 p-2 rounded"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <Button type="submit" disabled={uploading}>
+                    {uploading ? 'Uploading…' : 'Submit Review'}
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowForm(false)} className="text-gray-300">
                     Cancel
                   </Button>
                 </div>
@@ -204,40 +191,36 @@ export default function RatingsPage() {
             </Card>
           )}
 
-          <div className="space-y-8">
-            {reviews.map((review, index) => (
-              <Card key={review.id} className="p-6 hover-lift fade-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="flex items-start space-x-4">
-                  <Image
-                    src={review.image || "/placeholder.svg"}
-                    alt={review.name}
-                    width={60}
-                    height={60}
-                    className="rounded-full object-cover"
-                  />
-
-                  <div className="flex-1 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <div>
-                        <h4 className="font-semibold">{review.name}</h4>
-                        <div className="flex items-center space-x-2">
-                          {renderStars(review.rating)}
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(review.date).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-muted-foreground leading-relaxed">{review.review}</p>
-                  </div>
+          <div className="space-y-6">
+            {reviews.map(r => (
+              <Card key={r._id} className="bg-gray-800 p-6 flex space-x-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-700 relative">
+                  {r.avatar && <Image src={r.avatar} alt={r.name} fill className="object-cover" />}\
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">{r.name}</h3>
+                  <p className="text-sm text-gray-400">{r.role}, {r.company}</p>
+                  <p className="mt-2">{r.text}</p>
+                  <p className="mt-2 text-xs text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</p>
                 </div>
               </Card>
             ))}
           </div>
+
+          <div className="flex items-center justify-center space-x-4 mt-8">
+            <Button variant="outline" disabled={page <= 1} onClick={() => fetchPage(page - 1)} className="text-gray-300">
+              Previous
+            </Button>
+            <span className="font-medium">{page} / {pages} · {total} reviews</span>
+            <Button variant="outline" disabled={page >= pages} onClick={() => fetchPage(page + 1)} className="text-gray-300">
+              Next
+            </Button>
+          </div>
         </div>
       </main>
+
       <Footer />
     </div>
   )
 }
+

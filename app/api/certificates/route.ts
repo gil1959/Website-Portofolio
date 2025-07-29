@@ -1,32 +1,98 @@
 // app/api/certificates/route.ts
-import { NextResponse } from 'next/server';
-import { dbConnect } from '../../../lib/mongoose';
-import { Certificate } from '../../../models/Certificate';
+import { NextResponse } from 'next/server'
+import connectToDatabase from '@/lib/mongoose'
+import Certificate from '@/models/Certificate'
 
+// GET /api/certificates
 export async function GET() {
-    await dbConnect();
-    const items = await Certificate.find().sort({ issueDate: -1 });
-    return NextResponse.json(items);
+    await connectToDatabase()
+    const all = await Certificate.find().sort({ issueDate: -1 })
+    return NextResponse.json(all)
 }
 
+// POST /api/certificates
 export async function POST(req: Request) {
-    await dbConnect();
-    const data = await req.json();
-    const created = await Certificate.create(data);
-    return NextResponse.json(created, { status: 201 });
+    try {
+        await connectToDatabase()
+        const {
+            title,
+            issuer,
+            issueDate,
+            description,
+            credentialId,
+            skills,
+            verifyUrl,
+            image,
+        } = await req.json()
+
+        if (!title || !issuer || !issueDate) {
+            return NextResponse.json(
+                { error: 'title, issuer, dan issueDate wajib diisi' },
+                { status: 400 }
+            )
+        }
+
+        const created = await Certificate.create({
+            title,
+            issuer,
+            issueDate,
+            description,
+            credentialId,
+            skills,
+            verifyUrl,
+            image,
+        })
+
+        return NextResponse.json(created, { status: 201 })
+    } catch (e) {
+        console.error('POST /api/certificates error:', e)
+        return NextResponse.json({ error: 'POST certificate gagal' }, { status: 500 })
+    }
 }
 
+// PUT /api/certificates
 export async function PUT(req: Request) {
-    await dbConnect();
-    const { id, ...updates } = await req.json();
-    const updated = await Certificate.findByIdAndUpdate(id, updates, { new: true });
-    return NextResponse.json(updated);
+    try {
+        await connectToDatabase()
+        const {
+            id,
+            title,
+            issuer,
+            issueDate,
+            description,
+            credentialId,
+            skills,
+            verifyUrl,
+            image,
+        } = await req.json()
+        if (!id) {
+            return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+        }
+        const updated = await Certificate.findByIdAndUpdate(
+            id,
+            { title, issuer, issueDate, description, credentialId, skills, verifyUrl, image },
+            { new: true }
+        )
+        return NextResponse.json(updated)
+    } catch (e) {
+        console.error('PUT /api/certificates error:', e)
+        return NextResponse.json({ error: 'PUT certificate gagal' }, { status: 500 })
+    }
 }
 
+// DELETE /api/certificates?id=…
 export async function DELETE(req: Request) {
-    await dbConnect();
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    if (id) await Certificate.findByIdAndDelete(id);
-    return NextResponse.json(null, { status: 204 });
+    try {
+        await connectToDatabase()
+        const { searchParams } = new URL(req.url)
+        const id = searchParams.get('id')
+        if (!id) {
+            return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+        }
+        await Certificate.findByIdAndDelete(id)
+        return NextResponse.json({ success: true })
+    } catch (e) {
+        console.error('DELETE /api/certificates error:', e)
+        return NextResponse.json({ error: 'DELETE certificate gagal' }, { status: 500 })
+    }
 }

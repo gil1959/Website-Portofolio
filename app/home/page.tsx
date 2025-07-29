@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Star, Zap } from "lucide-react"
 import Image from "next/image"
 import { ChessGame } from "@/components/chess-game"
-import { LikeDislike } from "@/components/like-dislike"
+import { LikeDislike } from "@/components/like-dislike";
 import { Github, Linkedin, Twitter, Mail, Phone, MapPin, Send, Heart, ArrowUp, ExternalLink } from "lucide-react"
 
 
@@ -25,7 +25,7 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-gray-900/50 dark:to-gray-800/50">
       <Navigation />
 
       <main className="pt-16">
@@ -178,7 +178,7 @@ export default function HomePage() {
 
         {/* Like/Dislike Feature */}
         <div className="fade-up-delay-2">
-          <LikeDislike />
+          <LikeDislike targetId={"p._id"} />
         </div>
       </main>
 

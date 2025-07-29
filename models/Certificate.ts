@@ -1,13 +1,19 @@
 // models/Certificate.ts
-import { Schema, models, model } from 'mongoose';
+import mongoose from 'mongoose'
 
-const CertificateSchema = new Schema({
-    title: { type: String, required: true },
-    issuer: { type: String, required: true },
-    issueDate: { type: Date, required: true },
-    credentialUrl: { type: String },               // link verifikasi
-    createdAt: { type: Date, default: Date.now }
-});
+const CertificateSchema = new mongoose.Schema(
+    {
+        title: { type: String, required: true },
+        issuer: { type: String, required: true },
+        issueDate: { type: String, required: true }, // tahun atau tanggal
+        description: { type: String },
+        credentialId: { type: String },
+        skills: { type: [String], default: [] },
+        verifyUrl: { type: String },
+        image: { type: String }, // jika mau tampilkan gambar sertifikat
+    },
+    { timestamps: true }
+)
 
-export const Certificate =
-    models.Certificate || model('Certificate', CertificateSchema);
+export default mongoose.models.Certificate ||
+    mongoose.model('Certificate', CertificateSchema)
