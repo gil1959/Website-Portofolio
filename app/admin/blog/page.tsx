@@ -1,3 +1,4 @@
+// app/admin/blog/page.tsx
 'use client'
 
 import { useState, useEffect, ChangeEvent } from 'react'
@@ -70,18 +71,33 @@ export default function AdminBlogPage() {
         setForm(f => ({ ...f, [key]: value }))
     }
 
-    // file upload handler
+    // file upload handler (updated)
     async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
-        if (!e.target.files?.[0]) return
-        const fd = new FormData()
-        fd.append('file', e.target.files[0])
+        const file = e.target.files?.[0]
+        if (!file) return
+
         setUploading(true)
+        setError(null)
+
+        const formData = new FormData()
+        formData.append('file', file)
+
         try {
-            const res = await fetch('/api/upload', { method: 'POST', body: fd })
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            })
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ error: res.statusText }))
+                throw new Error(err.error || res.statusText)
+            }
+
             const { url } = await res.json()
             handleChange('image', url)
-        } catch {
-            setError('Image upload failed')
+        } catch (err: any) {
+            console.error('Upload failed:', err)
+            setError('Image upload failed: ' + err.message)
         } finally {
             setUploading(false)
         }
