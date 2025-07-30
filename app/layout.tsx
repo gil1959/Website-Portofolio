@@ -26,9 +26,13 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: "Personal Portfolio",
-  description: "Modern interactive personal portfolio website",
-    generator: 'v0.dev'
+  title: "GilPorto",
+  description: "Portofolio Ragil Kurniawan",
+  generator: 'Ragil Kurniawan',
+  icons: {
+    icon: '/pp.png',
+    apple: '/pp.png',
+  }
 }
 
 export default function RootLayout({
