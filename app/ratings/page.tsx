@@ -1,4 +1,4 @@
-
+// app/ratings/page.tsx
 'use client'
 
 import { useState, useEffect, FormEvent } from 'react'
@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import Image from 'next/image'
 
-// Tipe data review sesuai schema
 interface Review {
   _id: string
   name: string
@@ -22,6 +21,7 @@ interface Review {
 }
 
 export default function RatingsPage() {
+  // 1) reviews selalu array, bukan undefined
   const [reviews, setReviews] = useState<Review[]>([])
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
@@ -39,15 +39,24 @@ export default function RatingsPage() {
 
   const PAGE_SIZE = 3
 
-  // Fetch satu halaman review
   async function fetchPage(p: number) {
     setLoading(true)
     setError(null)
     try {
       const res = await fetch(`/api/ratings?page=${p}&limit=${PAGE_SIZE}`)
-      if (!res.ok) throw new Error('Gagal memuat review')
-      const json = await res.json() as { data: Review[]; page: number; limit: number; total: number }
-      setReviews(json.data)
+      if (!res.ok) throw new Error(`Failed to load reviews (${res.status})`)
+
+      // 2) Ambil properti yang benar dari JSON
+      const json = (await res.json()) as {
+        data?: Review[]
+        reviews?: Review[]
+        page: number
+        limit: number
+        total: number
+      }
+
+      const list = json.data ?? json.reviews ?? []
+      setReviews(list)
       setPage(json.page)
       setPages(Math.ceil(json.total / PAGE_SIZE))
       setTotal(json.total)
@@ -58,10 +67,10 @@ export default function RatingsPage() {
     }
   }
 
-  // Initial load
-  useEffect(() => { fetchPage(1) }, [])
+  useEffect(() => {
+    fetchPage(1)
+  }, [])
 
-  // Upload avatar ke storage
   async function uploadAvatar(file: File): Promise<string> {
     setUploading(true)
     const fd = new FormData()
@@ -72,7 +81,6 @@ export default function RatingsPage() {
     return url
   }
 
-  // Handle submit review
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
@@ -92,10 +100,9 @@ export default function RatingsPage() {
         body: JSON.stringify({ name, role, company, text, avatar: avatarUrl }),
       })
       const body = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(body.error || 'Gagal menambah review')
-      }
-      // Reset form & reload halaman
+      if (!res.ok) throw new Error(body.error || 'Gagal menambah review')
+
+      // reset form & reload
       setName('')
       setRole('')
       setCompany('')
@@ -122,7 +129,9 @@ export default function RatingsPage() {
 
       <main className="flex-grow pt-24 pb-16 px-4">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold text-center mb-8">Ratings &amp; Reviews</h1>
+          <h1 className="text-4xl font-bold text-center mb-8">
+            Ratings &amp; Reviews
+          </h1>
 
           {error && (
             <div className="bg-red-800 text-red-200 p-3 rounded mb-6 text-center">
@@ -170,11 +179,15 @@ export default function RatingsPage() {
                   className="bg-gray-700 text-white"
                 />
                 <div>
-                  <label className="block mb-1 font-medium">Avatar (optional)</label>
+                  <label className="block mb-1 font-medium">
+                    Avatar (optional)
+                  </label>
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={e => e.target.files?.[0] && setAvatarFile(e.target.files[0])}
+                    onChange={e =>
+                      e.target.files?.[0] && setAvatarFile(e.target.files[0])
+                    }
                     disabled={uploading}
                     className="block w-full text-sm text-gray-400 bg-gray-800 border border-gray-700 p-2 rounded"
                   />
@@ -183,7 +196,11 @@ export default function RatingsPage() {
                   <Button type="submit" disabled={uploading}>
                     {uploading ? 'Uploading…' : 'Submit Review'}
                   </Button>
-                  <Button variant="outline" onClick={() => setShowForm(false)} className="text-gray-300">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowForm(false)}
+                    className="text-gray-300"
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -192,27 +209,54 @@ export default function RatingsPage() {
           )}
 
           <div className="space-y-6">
-            {reviews.map(r => (
-              <Card key={r._id} className="bg-gray-800 p-6 flex space-x-4">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-700 relative">
-                  {r.avatar && <Image src={r.avatar} alt={r.name} fill className="object-cover" />}\
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">{r.name}</h3>
-                  <p className="text-sm text-gray-400">{r.role}, {r.company}</p>
-                  <p className="mt-2">{r.text}</p>
-                  <p className="mt-2 text-xs text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</p>
-                </div>
-              </Card>
-            ))}
+            {reviews.length === 0 ? (
+              <p className="text-center">Belum ada review.</p>
+            ) : (
+              reviews.map(r => (
+                <Card key={r._id} className="bg-gray-800 p-6 flex space-x-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-700 relative">
+                    {r.avatar && (
+                      <Image
+                        src={r.avatar}
+                        alt={r.name}
+                        fill
+                        className="object-cover"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">{r.name}</h3>
+                    <p className="text-sm text-gray-400">
+                      {r.role}, {r.company}
+                    </p>
+                    <p className="mt-2">{r.text}</p>
+                    <p className="mt-2 text-xs text-gray-500">
+                      {new Date(r.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </Card>
+              ))
+            )}
           </div>
 
           <div className="flex items-center justify-center space-x-4 mt-8">
-            <Button variant="outline" disabled={page <= 1} onClick={() => fetchPage(page - 1)} className="text-gray-300">
+            <Button
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => fetchPage(page - 1)}
+              className="text-gray-300"
+            >
               Previous
             </Button>
-            <span className="font-medium">{page} / {pages} · {total} reviews</span>
-            <Button variant="outline" disabled={page >= pages} onClick={() => fetchPage(page + 1)} className="text-gray-300">
+            <span className="font-medium">
+              {page} / {pages} · {total} reviews
+            </span>
+            <Button
+              variant="outline"
+              disabled={page >= pages}
+              onClick={() => fetchPage(page + 1)}
+              className="text-gray-300"
+            >
               Next
             </Button>
           </div>
@@ -223,4 +267,3 @@ export default function RatingsPage() {
     </div>
   )
 }
-

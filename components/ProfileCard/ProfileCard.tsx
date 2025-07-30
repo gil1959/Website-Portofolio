@@ -70,7 +70,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
   title = "Software Engineer",
   handle = "javicodes",
   status = "Online",
-  contactText = "Contact",
+  contactText = "Contact Me",
   showUserInfo = true,
   onContactClick,
 }) => {
@@ -79,7 +79,6 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
 
   const animationHandlers = useMemo(() => {
     if (!enableTilt) return null;
-
     let rafId: number | null = null;
 
     const updateCardTransform = (
@@ -102,7 +101,11 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
         "--pointer-y": `${percentY}%`,
         "--background-x": `${adjust(percentX, 0, 100, 35, 65)}%`,
         "--background-y": `${adjust(percentY, 0, 100, 35, 65)}%`,
-        "--pointer-from-center": `${clamp(Math.hypot(percentY - 50, percentX - 50) / 50, 0, 1)}`,
+        "--pointer-from-center": `${clamp(
+          Math.hypot(percentY - 50, percentX - 50) / 50,
+          0,
+          1
+        )}`,
         "--pointer-from-top": `${percentY / 100}`,
         "--pointer-from-left": `${percentX / 100}`,
         "--rotate-x": `${round(-(centerX / 5))}deg`,
@@ -110,7 +113,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
       };
 
       Object.entries(properties).forEach(([property, value]) => {
-        wrap.style.setProperty(property, value);
+        wrap.style.setProperty(property, value as string);
       });
     };
 
@@ -159,9 +162,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
     (event: PointerEvent) => {
       const card = cardRef.current;
       const wrap = wrapRef.current;
-
       if (!card || !wrap || !animationHandlers) return;
-
       const rect = card.getBoundingClientRect();
       animationHandlers.updateCardTransform(
         event.clientX - rect.left,
@@ -176,9 +177,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
   const handlePointerEnter = useCallback(() => {
     const card = cardRef.current;
     const wrap = wrapRef.current;
-
     if (!card || !wrap || !animationHandlers) return;
-
     animationHandlers.cancelAnimation();
     wrap.classList.add("active");
     card.classList.add("active");
@@ -188,9 +187,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
     (event: PointerEvent) => {
       const card = cardRef.current;
       const wrap = wrapRef.current;
-
       if (!card || !wrap || !animationHandlers) return;
-
       animationHandlers.createSmoothAnimation(
         ANIMATION_CONFIG.SMOOTH_DURATION,
         event.offsetX,
@@ -208,12 +205,9 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
     (event: DeviceOrientationEvent) => {
       const card = cardRef.current;
       const wrap = wrapRef.current;
-
       if (!card || !wrap || !animationHandlers) return;
-
       const { beta, gamma } = event;
-      if (!beta || !gamma) return;
-
+      if (beta === null || gamma === null) return;
       animationHandlers.updateCardTransform(
         card.clientHeight / 2 + gamma * mobileTiltSensitivity,
         card.clientWidth / 2 + (beta - ANIMATION_CONFIG.DEVICE_BETA_OFFSET) * mobileTiltSensitivity,
@@ -226,10 +220,8 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
 
   useEffect(() => {
     if (!enableTilt || !animationHandlers) return;
-
     const card = cardRef.current;
     const wrap = wrapRef.current;
-
     if (!card || !wrap) return;
 
     const pointerMoveHandler = handlePointerMove as EventListener;
@@ -238,7 +230,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
     const deviceOrientationHandler = handleDeviceOrientation as EventListener;
 
     const handleClick = () => {
-      if (!enableMobileTilt || location.protocol !== 'https://github.com/gil1959') return;
+      if (!enableMobileTilt) return;
       if (typeof (window.DeviceMotionEvent as any).requestPermission === 'function') {
         (window.DeviceMotionEvent as any)
           .requestPermission()
@@ -247,7 +239,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
               window.addEventListener('deviceorientation', deviceOrientationHandler);
             }
           })
-          .catch((err: any) => console.error(err));
+          .catch(console.error);
       } else {
         window.addEventListener('deviceorientation', deviceOrientationHandler);
       }
@@ -260,7 +252,6 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
 
     const initialX = wrap.clientWidth - ANIMATION_CONFIG.INITIAL_X_OFFSET;
     const initialY = ANIMATION_CONFIG.INITIAL_Y_OFFSET;
-
     animationHandlers.updateCardTransform(initialX, initialY, card, wrap);
     animationHandlers.createSmoothAnimation(
       ANIMATION_CONFIG.INITIAL_DURATION,
@@ -278,30 +269,23 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
       window.removeEventListener('deviceorientation', deviceOrientationHandler);
       animationHandlers.cancelAnimation();
     };
-  }, [
-    enableTilt,
-    enableMobileTilt,
-    animationHandlers,
-    handlePointerMove,
-    handlePointerEnter,
-    handlePointerLeave,
-    handleDeviceOrientation,
-  ]);
+  }, [enableTilt, enableMobileTilt, animationHandlers, handlePointerMove, handlePointerEnter, handlePointerLeave, handleDeviceOrientation]);
 
   const cardStyle = useMemo(
-    () =>
-      ({
-        "--icon": iconUrl ? `url(${iconUrl})` : "none",
-        "--grain": grainUrl ? `url(${grainUrl})` : "none",
-        "--behind-gradient": showBehindGradient
-          ? (behindGradient ?? DEFAULT_BEHIND_GRADIENT)
-          : "none",
-        "--inner-gradient": innerGradient ?? DEFAULT_INNER_GRADIENT,
-      }) as React.CSSProperties,
+    () => ({
+      "--icon": iconUrl ? `url(${iconUrl})` : "none",
+      "--grain": grainUrl ? `url(${grainUrl})` : "none",
+      "--behind-gradient": showBehindGradient
+        ? (behindGradient ?? DEFAULT_BEHIND_GRADIENT)
+        : "none",
+      "--inner-gradient": innerGradient ?? DEFAULT_INNER_GRADIENT,
+    } as React.CSSProperties),
     [iconUrl, grainUrl, showBehindGradient, behindGradient, innerGradient]
   );
 
+  // Updated Contact click handler to open LinkedIn
   const handleContactClick = useCallback(() => {
+    window.open('https://www.linkedin.com/in/ragilkurniawan', '_blank');
     onContactClick?.();
   }, [onContactClick]);
 

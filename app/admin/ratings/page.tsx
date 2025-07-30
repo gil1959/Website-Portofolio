@@ -1,3 +1,4 @@
+// app/admin/ratings/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -15,24 +16,24 @@ interface Review {
 }
 
 export default function AdminRatingsPage() {
+    // 1) Inisialisasi ke array kosong
     const [items, setItems] = useState<Review[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    // load semua reviews
+    // Load semua reviews
     async function fetchAll() {
         setLoading(true)
         setError(null)
         try {
             const res = await fetch('/api/ratings?page=1&limit=1000')
             if (!res.ok) throw new Error(`Fetch gagal (${res.status})`)
-            const json = await res.json() as {
-                data: Review[]
-                page: number
-                limit: number
-                total: number
+            const json = (await res.json()) as {
+                data?: Review[]
+                reviews?: Review[]
             }
-            setItems(json.data)
+            // 2) Pilih field yang ada di JSON, fallback ke array kosong
+            setItems(json.data ?? json.reviews ?? [])
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -44,7 +45,7 @@ export default function AdminRatingsPage() {
         fetchAll()
     }, [])
 
-    // hapus satu review
+    // Hapus satu review
     async function handleDelete(id: string) {
         if (!confirm('Yakin ingin menghapus review ini?')) return
 
@@ -54,11 +55,9 @@ export default function AdminRatingsPage() {
             })
             const body = await res.json().catch(() => ({}))
             if (!res.ok) {
-                // tampilkan error detail dari server
                 alert(`Delete gagal: ${body.error || res.status}`)
                 return
             }
-            // kalau sukses, reload daftar
             fetchAll()
         } catch (err: any) {
             alert(`Delete gagal: ${err.message}`)
