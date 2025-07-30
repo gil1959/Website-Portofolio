@@ -15,6 +15,7 @@ import { Github, Linkedin, Twitter, Mail, Phone, MapPin, Send, Heart, ArrowUp, E
 
 
 export default function HomePage() {
+  const project = { _id: "abc123", title: "My Portfolio" }
   const { userName } = useUser()
   const t = useTranslation()
   const router = useRouter()
@@ -178,7 +179,7 @@ export default function HomePage() {
 
         {/* Like/Dislike Feature */}
         <div className="fade-up-delay-2">
-          <LikeDislike targetId={"p._id"} />
+          <LikeDislike targetId="abc123" />
         </div>
       </main>
 

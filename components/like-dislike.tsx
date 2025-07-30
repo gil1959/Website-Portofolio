@@ -78,8 +78,8 @@ export function LikeDislike({ targetId }: LikeDislikeProps) {
           >
             <ThumbsUp
               className={`h-5 w-5 transition-all duration-300 ${userVote === 'like'
-                  ? 'text-white'
-                  : 'text-green-600 group-hover:scale-110'
+                ? 'text-white'
+                : 'text-green-600 group-hover:scale-110'
                 }`}
             />
             {isAnimating === 'like' && (
@@ -113,8 +113,8 @@ export function LikeDislike({ targetId }: LikeDislikeProps) {
           >
             <ThumbsDown
               className={`h-5 w-5 transition-all duration-300 ${userVote === 'dislike'
-                  ? 'text-white'
-                  : 'text-red-600 group-hover:scale-110'
+                ? 'text-white'
+                : 'text-red-600 group-hover:scale-110'
                 }`}
             />
             {isAnimating === 'dislike' && (
