@@ -23,9 +23,8 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ password }),
       })
       if (!res.ok) throw new Error('Invalid password')
-      // kalau valid:
-      document.cookie = 'adminAuth=true; path=/; samesite=strict'
-      router.replace('/admin/dashboard')
+      // kalau valid (API will set the HttpOnly cookie):
+      window.location.href = '/admin/dashboard'
     } catch (err: any) {
       setError(err.message || 'Invalid password')
     }
